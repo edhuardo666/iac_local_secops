@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>App de Tarefas DevSecOps</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { background: #f5f5f5; padding: 20px; border-radius: 8px; }
+        input, button { padding: 10px; margin: 5px; }
+        ul { list-style-type: none; padding: 0; }
+        li { background: white; margin: 5px 0; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 App de Tarefas DevSecOps</h1>
+        <p>Esta é nossa aplicação de estudo para Docker, K8s, CI/CD e monitoramento!</p>
+        
+        <div>
+            <input type="text" id="taskInput" placeholder="Nova tarefa..." style="width: 300px;">
+            <button onclick="addTask()">Adicionar Tarefa</button>
+        </div>
+        
+        <h3>Lista de Tarefas:</h3>
+        <ul id="taskList"></ul>
+        
+        <div style="margin-top: 20px; font-size: 12px; color: #666;">
+            <strong>Status:</strong> <span id="status">Carregando...</span>
+        </div>
+    </div>
+
+    <script>
+        function loadTasks() {
+            fetch('/tasks')
+                .then(response => response.json())
+                .then(data => {
+                    const taskList = document.getElementById('taskList');
+                    taskList.innerHTML = '';
+                    data.tasks.forEach(task => {
+                        const li = document.createElement('li');
+                        li.textContent = task;
+                        taskList.appendChild(li);
+                    });
+                });
+        }
+
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const task = input.value.trim();
+            
+            if (task) {
+                fetch('/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task: task })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'added') {
+                        input.value = '';
+                        loadTasks();
+                    }
+                });
+            }
+        }
+
+        function checkHealth() {
+            fetch('/health')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('status').textContent = 
+                        `App: ${data.status} | Redis: ${data.redis_connected ? 'Conectado' : 'Desconectado'} | Host: ${data.hostname}`;
+                });
+        }
+
+        // Carrega tarefas e verifica saúde ao iniciar
+        loadTasks();
+        checkHealth();
+        // Atualiza a cada 10 segundos
+        setInterval(checkHealth, 10000);
+    </script>
+</body>
+</html>
